@@ -3,23 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <title>Registr</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        nav {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+        }
+        button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button a {
+            color: white;
+            text-decoration: none;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <h1>Registr</h1>
+    <nav>
+        <p><a href="{{ url_for('index') }}">Главная</a></p>
+    </nav>
 
-    {% if registr %}
-        <p>Приветствую вас, {{ username }}. Вы успешно зарегистрировались!</p>
-        <p><a href="{{ url_for('index') }}">Вернуться на главную</a></p>
-    {% else %}
-        <form action="/registr" method="post">
-            <p><input id="username" name="username" type="text" placeholder="логин"></p>
-            <p><input id="password" name="password" type="password" placeholder="пароль"></p>
-            <p><button type="submit">Зарегистрироваться</button></p>
-        </form>
-    {% endif %}
+    <div class="container">
+        <h1>Регистрация</h1>
 
-    <p><a href="{{ url_for('index') }}">Index</a></p>
-    <p><a href="{{ url_for('login') }}">Login</a></p>
-    <p><a href="{{ url_for('logout') }}">Logout</a></p>
+        {% if registr %}
+            <p>Приветствую вас, {{ username }}. Вы успешно зарегистрировались!</p>
+            <p><a href="{{ url_for('index') }}">Вернуться на главную</a></p>
+        {% else %}
+            <form action="/registr" method="post">
+                <p><input id="username" name="username" type="text" placeholder="логин"></p>
+                <p><input id="password" name="password" type="password" placeholder="пароль"></p>
+                <p><button type="submit">Зарегистрироваться</button></p>
+            </form>
+            <p class="link"><a href="{{ url_for('login') }}">Вход</a></p>
+        {% endif %}
+    </div>
 </body>
 </html>

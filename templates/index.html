@@ -3,10 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <title>Index</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        nav {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+        }
+        button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 10px; /* Добавляем отступ снизу */
+        }
+        button a {
+            color: white;
+            text-decoration: none;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <h1>Index</h1>
+    <nav>
+        <p><a href="{{ url_for('index') }}">Главная</a></p>
+        {% if auth %}
+            <form action="/" method="post">
+                <button type="submit">Выйти</button>
+            </form>
+        {% else %}
+            <button><a href="{{ url_for('login') }}">Войти</a></button>
+        {% endif %}
+    </nav>
 
-    <p><a href="{{ url_for('login') }}">Login</a></p>
+    <div class="container">
+        <h1>Главная</h1>
+
+        {% if auth %}
+            <button><a href="#">Категории вопросов</a></button>
+            <button><a href="#">Загрузить Excel-файл с вопросами</a></button>
+        {% else %}
+            <p>Какая-то инфа</p>
+        {% endif %}
+    </div>
 </body>
 </html>
