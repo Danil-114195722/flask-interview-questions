@@ -1,11 +1,10 @@
+from datetime import datetime
+import jwt
+
 import sqlalchemy as sa
 from sqlalchemy.orm import DeclarativeBase, Session, relationship
 
-
-# строка подключения к БД
-SQLITE_DB = "sqlite:///db.sqlite3"
-# создаем движок SqlAlchemy
-ENGINE = sa.create_engine(SQLITE_DB)
+from data.constants import JWT_EXPIRE, SECRET_KEY, ENGINE
 
 
 class DBSession:
@@ -33,15 +32,16 @@ class Base(DeclarativeBase):
     """Базовый класс для моделей"""
 
     @classmethod
+    def query(cls, *args, **kwargs):
+        with DBSession() as db:
+            return db.query(cls, *args, **kwargs)
+
+    @classmethod
     def create(cls, **kwargs):
         with DBSession() as db:
             new_object = cls(**kwargs)
             db.add(new_object)
-
-    @classmethod
-    def query(cls, *args, **kwargs):
-        with DBSession() as db:
-            return db.query(cls, *args, **kwargs)
+        return cls.query().filter_by(**kwargs).first()
 
     @classmethod
     def delete(cls, pk: int):
@@ -59,6 +59,31 @@ class User(Base):
 
     tokens = relationship("Token", back_populates="token_user", cascade="all, delete-orphan")
     questions = relationship("Question", back_populates="question_user", cascade="all, delete-orphan")
+
+    @property
+    def token(self):
+        """Get token"""
+        return self._generate_jwt_token()
+
+    def _generate_jwt_token(self):
+        """Generate JWT-token with user id, expire in JWT_EXPIRE time"""
+
+        token_create_time = datetime.now()
+        token_expire_time = token_create_time + JWT_EXPIRE
+        user_id = self.id
+        token = jwt.encode({
+            'id': user_id,
+            'exp': int(token_expire_time.strftime('%s'))
+        }, SECRET_KEY, algorithm='HS256')
+
+        try:
+            Token.create(
+                user_id=user_id,
+                token=token,
+            )
+            return token
+        except Exception as error:
+            raise error
 
     def __str__(self):
         return f"User {self.id}: {self.username}"
