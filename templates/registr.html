@@ -6,6 +6,18 @@
 </head>
 <body>
     <h1>Registr</h1>
+
+    {% if registr %}
+        <p>Приветствую вас, {{ username }}. Вы успешно зарегистрировались!</p>
+        <p><a href="{{ url_for('index') }}">Вернуться на главную</a></p>
+    {% else %}
+        <form action="/registr" method="post">
+            <p><input id="username" name="username" type="text" placeholder="логин"></p>
+            <p><input id="password" name="password" type="password" placeholder="пароль"></p>
+            <p><button type="submit">Зарегистрироваться</button></p>
+        </form>
+    {% endif %}
+
     <p><a href="{{ url_for('index') }}">Index</a></p>
     <p><a href="{{ url_for('login') }}">Login</a></p>
     <p><a href="{{ url_for('logout') }}">Logout</a></p>
