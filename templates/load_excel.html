@@ -23,11 +23,15 @@
             color: #fff;
             text-decoration: none;
         }
-        h1, p {
+        h1, h2, p {
             text-align: center;
         }
         h1 {
             color: #ff6f61; /* Красный цвет заголовка */
+        }
+        h2 {
+            color: #ff6f61; /* Красный цвет заголовка */
+            margin-top: 30px; /* Добавляем небольшой отступ сверху */
         }
         a {
             color: #ff6f61;
@@ -35,6 +39,25 @@
         }
         a:hover {
             text-decoration: underline;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+        .card {
+            border: 1px solid #ff6f61; /* Обводка карточки */
+            border-radius: 5px; /* Закругление углов */
+            padding: 10px; /* Внутренний отступ */
+            margin-top: 20px; /* Отступ сверху */
+        }
+        .card ul {
+            list-style-type: none; /* Убираем маркеры списка */
+            padding: 0; /* Убираем отступы вокруг списка */
+        }
+        .card li {
+            margin-bottom: 5px; /* Небольшой отступ между элементами списка */
         }
     </style>
 </head>
@@ -44,5 +67,27 @@
     </nav>
 
     <h1>Загрузка Excel-файла с вопросами</h1>
+
+    <div class="container">
+        {% if sent %}
+            <h2>Файл обработан</h2>
+            {% for key, value in total_result_dict.items() %}
+                <div class="card">
+                    <p><strong>{{ key }}</strong></p>
+                    <ul>
+                        {% for inner_key, inner_value in value.items() %}
+                            <li>{{ inner_key }}: {{ inner_value }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+            <p><a class="register-link" href="{{ url_for('index') }}">Вернуться на главную</a></p>
+        {% else %}
+            <form action="/load_excel" method="post" enctype="multipart/form-data">
+                <p><input id="excel_file" name="excel_file" type="file" required></p>
+                <p><button type="submit">Отправить</button></p>
+            </form>
+        {% endif %}
+    </div>
 </body>
 </html>

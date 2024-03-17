@@ -2,6 +2,10 @@ class PermissionsDenied(Exception):
     pass
 
 
+class ServerProcessError(Exception):
+    pass
+
+
 class AlreadyAuthenticated(Exception):
     pass
 
@@ -11,8 +15,4 @@ class CreateEntityError(Exception):
 
 
 class LoginError(Exception):
-    pass
-
-
-class ServerProcessError(Exception):
     pass

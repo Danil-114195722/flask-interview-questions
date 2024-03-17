@@ -17,7 +17,7 @@ SQLITE_DB = f"sqlite:///{BASEDIR}/db.sqlite3"
 # создаем движок SqlAlchemy
 ENGINE = create_engine(SQLITE_DB)
 
-JWT_EXPIRE = timedelta(minutes=1.5)
+JWT_EXPIRE = timedelta(minutes=5)
 SECRET_KEY = os.getenv('SECRET_KEY')
 IP_OR_DOMAIN = "http://127.0.0.1:5000"
 

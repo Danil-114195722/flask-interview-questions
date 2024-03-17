@@ -1,11 +1,16 @@
+import time
+from os import listdir, mkdir, remove
+from datetime import datetime
+
 from flask import render_template, request, make_response, url_for
 from sqlalchemy.exc import IntegrityError
 
-from data.constants import IP_OR_DOMAIN, app
+from data.constants import BASEDIR, IP_OR_DOMAIN, app
 from database.models import User
 from .errors import PermissionsDenied, ServerProcessError
-from .services import (make_password, check_password,
-                       check_token_in_db, check_token_expired, remove_token)
+from .services import (make_password, check_password, get_user_from_request,
+                       check_token_in_db, check_token_expired, remove_token,
+                       upload_questions_to_db)
 
 
 AUTH_REQUIRED_ENDPOINTS = ['/categories', '/questions', '/load_excel']
@@ -19,7 +24,6 @@ def check_auth_token():
 
     # достаём из куков токен авторизации юзера
     auth_cookie = request.cookies.get('Authorization')
-    print([auth_cookie])
 
     # если для эндпоинта требуется авторизация
     if relative_url in AUTH_REQUIRED_ENDPOINTS:
@@ -213,4 +217,32 @@ def login():
 
 @app.route("/load_excel", methods=["GET", "POST"])
 def load_excel():
-    return render_template("load_excel.html")
+    if request.method == "GET":
+        return render_template("load_excel.html")
+
+    # отправка Excel-файла с вопросами
+    if request.method == "POST":
+        # достаём из формы Excel-файл
+        request_file = request.files['excel_file']
+        # получаем объект юзера из запроса
+        user = get_user_from_request(request=request)
+
+        now_time = datetime.now().strftime('%H_%M_%S')
+        user_files_path = f'{BASEDIR}/files/user_{user.id}'
+
+        # создаём каталог для файлов юзера, если такового нет
+        if f'user_{user.id}' not in listdir(f'{BASEDIR}/files'):
+            mkdir(user_files_path)
+
+        # сохраняем файл
+        full_file_path = f'{user_files_path}/{now_time}_{request_file.filename}'
+        request_file.save(full_file_path)
+
+        # добавления всех вопросов из загруженного Excel-файла в БД
+        total_result_dict = upload_questions_to_db(path_to_file=full_file_path, user_obj=user)
+        print(total_result_dict)
+
+        # удаляем загруженный файл после добавления всех вопросов в БД
+        remove(full_file_path)
+
+        return render_template("load_excel.html", sent=True, total_result_dict=total_result_dict)
