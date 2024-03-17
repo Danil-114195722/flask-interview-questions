@@ -5,3 +5,11 @@ class PermissionsDenied(Exception):
 class AlreadyAuthenticated(Exception):
     pass
 
+
+class CreateEntityError(Exception):
+    pass
+
+
+class LoginError(Exception):
+    pass
+

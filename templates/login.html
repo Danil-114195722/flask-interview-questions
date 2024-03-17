@@ -57,8 +57,8 @@
             <p><a href="{{ url_for('index') }}">Вернуться на главную</a></p>
         {% else %}
             <form action="/login" method="post">
-                <p><input id="username" name="username" type="text" placeholder="логин"></p>
-                <p><input id="password" name="password" type="password" placeholder="пароль"></p>
+                <p><input id="username" name="username" type="text" placeholder="логин" required></p>
+                <p><input id="password" name="password" type="password" placeholder="пароль" required></p>
                 <p><button type="submit">Войти</button></p>
             </form>
             <p><a href="{{ url_for('registr') }}">Регистрация</a></p>
