@@ -1,13 +1,15 @@
-from flask import render_template, request, make_response
+from flask import render_template, request, make_response, url_for
 from sqlalchemy.exc import IntegrityError
 
 from data.constants import IP_OR_DOMAIN, app
 from database.models import User
-from .errors import PermissionsDenied, AlreadyAuthenticated, CreateEntityError, LoginError
-from .services import make_password, check_password
+from .errors import PermissionsDenied, ServerProcessError
+from .services import (make_password, check_password,
+                       check_token_in_db, check_token_expired, remove_token)
 
 
-AUTH_REQUIRED_ENDPOINTS = ['/categories', '/questions', 'load_excel/']
+AUTH_REQUIRED_ENDPOINTS = ['/categories', '/questions', '/load_excel']
+AUTH_HEADER_PREFIX = 'bearer'
 
 
 @app.before_request
@@ -16,19 +18,78 @@ def check_auth_token():
     relative_url = request.url.removeprefix(IP_OR_DOMAIN)
 
     # достаём из куков токен авторизации юзера
-    auth_token = request.cookies.get('Authorization')
+    auth_cookie = request.cookies.get('Authorization')
+    print([auth_cookie])
+
     # если для эндпоинта требуется авторизация
     if relative_url in AUTH_REQUIRED_ENDPOINTS:
         # если юзер не авторизован
-        if not auth_token:
-            raise PermissionsDenied('Auth credentials were not provided! This resource require auth token.')
+        if not auth_cookie:
+            return render_template(
+                "error_page.html",
+                status=401,
+                desc='Ресурс заблокирован! Требуется авторизация',
+                url=url_for('login'),
+                url_text='Вход'
+            )
+            # raise PermissionsDenied('Auth credentials were not provided! This resource require auth token.')
+
+        auth_creds = auth_cookie.split(' ')
+        # проверка кол-ва слов в куки авторизации
+        if len(auth_creds) != 2:
+            raise PermissionsDenied('Invalid auth credentials were provided! Length of auth cookie is not equal 2.')
+
+        prefix, token = auth_creds
+        if prefix.lower() != AUTH_HEADER_PREFIX:
+            raise PermissionsDenied('Invalid auth credentials were provided!')
 
         # проверка токена на наличие в БД
+        if not check_token_in_db(token=token):
+            return render_template(
+                "error_page.html",
+                status=401,
+                desc='Ресурс заблокирован! Требуется авторизация',
+                url=url_for('login'),
+                url_text='Вход'
+            )
+            # raise PermissionsDenied('Invalid auth credentials were provided! Token was not found in DB.')
+
         # проверка токена на то, истёк ли он или нет
+        if check_token_expired(token=token):
+            # создаём ответ со страницей ошибки
+            response = make_response(render_template(
+                "error_page.html",
+                status=401,
+                desc='Срок сессии аккаунта истёк! Требуется повторный вход в аккаунт',
+                url=url_for('login'),
+                url_text='Войти'
+            ))
+            # удаляем из БД токен авторизации юзера
+            try:
+                remove_token(token=token)
+            except ServerProcessError:
+                return render_template(
+                    "error_page.html",
+                    status=500,
+                    desc='Ошибка сервера.',
+                    url=url_for('index'),
+                    url_text='Вернуться на главную'
+                )
+            # удаляем из куки токен авторизации юзера
+            response.set_cookie('Authorization', max_age=0)
+            return response
+            # raise PermissionsDenied('Token is expired! Re-authorization required.')
 
     # если юзер уже авторизирован, но просится на ресурсы входа/регистрации
-    elif auth_token and relative_url in ['/login', '/registr']:
-        raise AlreadyAuthenticated('You already authenticated!')
+    elif auth_cookie and relative_url in ['/login', '/registr']:
+        return render_template(
+            "error_page.html",
+            status=409,
+            desc='Вы уже вошли в аккаунт! Если вам нужно войти в другой аккаунт, то вначале выйдите из текущего',
+            url=url_for('index'),
+            url_text='Вернуться на главную'
+        )
+        # raise AlreadyAuthenticated('You already authenticated!')
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -37,8 +98,26 @@ def index():
     if request.method == "POST":
         # создаём ответ
         response = make_response(render_template("index.html", logout=True, auth=False))
+        # получаем куки авторизации
+        auth_cookie = request.cookies.get('Authorization')
+
+        # если был отправлен повторный POST запрос для logout
+        if not auth_cookie:
+            return response
+
         # удаляем из БД токен авторизации юзера
-        # auth_token = request.cookies.get('Authorization')
+        auth_token = auth_cookie.split(' ')[-1]
+        try:
+            remove_token(token=auth_token)
+        except ServerProcessError:
+            return render_template(
+                "error_page.html",
+                status=500,
+                desc='Ошибка сервера.',
+                url=url_for('index'),
+                url_text='Вернуться на главную'
+            )
+
         # удаляем из куки токен авторизации юзера
         response.set_cookie('Authorization', max_age=0)
         return response
@@ -68,7 +147,14 @@ def registr():
             new_user = User.create(username=request_username, password=hashed_password)
         # если юзер с таким именем уже есть в БД
         except IntegrityError:
-            raise CreateEntityError('User with such username already exists!')
+            return render_template(
+                "error_page.html",
+                status=400,
+                desc='Пользователь с таким логином уже существует! Попробуйте использовать другой логин',
+                url=url_for('registr'),
+                url_text='Назад'
+            )
+            # raise CreateEntityError('User with such username already exists!')
 
         # создаём ответ и добавляем в куки токен авторизации юзера
         response = make_response(render_template(
@@ -76,7 +162,7 @@ def registr():
             registr=True,
             username=new_user.username
         ))
-        response.set_cookie('Authorization', f'Bearer new_user.token')
+        response.set_cookie('Authorization', f'Bearer {new_user.token}')
         return response
 
 
@@ -95,11 +181,25 @@ def login():
         user = User.query().filter_by(username=request_username).first()
         # если юзер с введённым именем не найден
         if not user:
-            raise LoginError('User with such username was not found!')
+            return render_template(
+                "error_page.html",
+                status=400,
+                desc='Неверный логин! Пользователя с таким логином не существует',
+                url=url_for('login'),
+                url_text='Назад'
+            )
+            # raise LoginError('User with such username was not found!')
 
         # проверяем на совпадение введённый пароль и хешированный пароль юзера из БД
         if not check_password(password_to_check=request_password, real_encode_password=user.password):
-            raise LoginError('Invalid username and password!')
+            return render_template(
+                "error_page.html",
+                status=400,
+                desc='Неверный логин или пароль!',
+                url=url_for('login'),
+                url_text='Назад'
+            )
+            # raise LoginError('Invalid username and password!')
 
         # создаём ответ и добавляем в куки токен авторизации юзера
         response = make_response(render_template(
@@ -107,5 +207,10 @@ def login():
             login=True,
             username=user.username
         ))
-        response.set_cookie('Authorization', 'Bearer new_user.token')
+        response.set_cookie('Authorization', f'Bearer {user.token}')
         return response
+
+
+@app.route("/load_excel", methods=["GET", "POST"])
+def load_excel():
+    return render_template("load_excel.html")

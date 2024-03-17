@@ -13,3 +13,6 @@ class CreateEntityError(Exception):
 class LoginError(Exception):
     pass
 
+
+class ServerProcessError(Exception):
+    pass

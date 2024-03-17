@@ -62,7 +62,7 @@
 
         {% if auth %}
             <button><a href="#">Категории вопросов</a></button>
-            <button><a href="#">Загрузить Excel-файл с вопросами</a></button>
+            <button><a href="{{ url_for('load_excel') }}">Загрузить Excel-файл с вопросами</a></button>
         {% else %}
             <p>Какая-то инфа</p>
         {% endif %}

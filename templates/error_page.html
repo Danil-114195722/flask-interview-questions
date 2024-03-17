@@ -2,13 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Load Excel</title>
+    <title>Error</title>
 </head>
 <body>
     <nav>
         <p><a href="{{ url_for('index') }}">Главная</a></p>
     </nav>
 
-    <h1>Загрузка Excel-файла с вопросами</h1>
+    <h1>Ошибка {{ status }}</h1>
+    <p>{{ desc }}</p>
+    <p><a href="{{ url }}">{{ url_text }}</a></p>
 </body>
 </html>
