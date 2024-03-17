@@ -15,7 +15,7 @@ BASEDIR = Path(__file__).parent.parent
 # строка подключения к БД
 SQLITE_DB = f"sqlite:///{BASEDIR}/db.sqlite3"
 # создаем движок SqlAlchemy
-ENGINE = create_engine(SQLITE_DB)
+ENGINE = create_engine(SQLITE_DB, pool_size=20, max_overflow=10)
 
 JWT_EXPIRE = timedelta(minutes=5)
 SECRET_KEY = os.getenv('SECRET_KEY')

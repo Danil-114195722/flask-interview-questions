@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Questions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #222;
+            color: #fff;
+        }
+        nav {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #ff6f61; /* Красный цвет заголовка */
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 20px;
+            text-align: left; /* Выравнивание текста по левому краю */
+        }
+        .button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-bottom: 10px;
+            display: inline-block; /* Добавлено для правильного выравнивания кнопок */
+        }
+        .index-link {
+            color: #ff6f61;
+            text-decoration: none;
+        }
+        .index-link:hover {
+            text-decoration: underline;
+        }
+        .center-info {
+            text-align: center;
+            margin-bottom: 20px; /* Добавляем отступ снизу */
+        }
+        span {
+            color: #ff6f61;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <p><a href="{{ url_for('index') }}">Главная</a></p>
+    </nav>
+
+    <h1>Категория: {{ category_name }}</h1>
+    <h2>Случайный вопрос</h2>
+    <div class="container">
+        {% if not empty %}
+            <p><span>ФИО:</span> {{ question.client_name }}</p>
+            <p><span>Место работы/учёбы:</span> {{ question.job_place }}</p>
+            <p><span>Должность/курс:</span> {{ question.job_title }}</p>
+            <p><span>Вопрос:</span> {{ question.question_text }}</p>
+
+            <div class="center-info">
+                <button class="button" onclick="window.location.href='{{ url_for('questions', category_id=category_id) }}'">Следующий вопрос</button>
+            </div>
+        {% endif %}
+        <div class="center-info">
+            <p>Вопросов осталось: {{ left_questions }}</p>
+            <p><a class="index-link" href="{{ url_for('categories') }}">Назад к категориям</a></p>
+        </div>
+    </div>
+</body>
+</html>

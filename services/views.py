@@ -1,19 +1,18 @@
-import time
+import random
 from os import listdir, mkdir, remove
 from datetime import datetime
 
-from flask import render_template, request, make_response, url_for
+from flask import render_template, request, make_response, url_for, abort
 from sqlalchemy.exc import IntegrityError
 
 from data.constants import BASEDIR, IP_OR_DOMAIN, app
-from database.models import User, Category
+from database.models import User, Category, Question
 from .errors import PermissionsDenied, ServerProcessError
 from .services import (make_password, check_password, get_user_from_request,
                        check_token_in_db, check_token_expired, remove_token,
                        upload_questions_to_db)
 
 
-AUTH_REQUIRED_ENDPOINTS = ['/categories', '/questions', '/load_excel']
 AUTH_HEADER_PREFIX = 'bearer'
 
 
@@ -26,7 +25,7 @@ def check_auth_token():
     auth_cookie = request.cookies.get('Authorization')
 
     # если для эндпоинта требуется авторизация
-    if relative_url in AUTH_REQUIRED_ENDPOINTS:
+    if relative_url in ['/categories', '/load_excel'] or relative_url.startswith('/question'):
         # если юзер не авторизован
         if not auth_cookie:
             return render_template(
@@ -252,16 +251,56 @@ def categories():
     # получаем объект юзера из запроса
     user = get_user_from_request(request=request)
 
-    categories_list = [(category.id, category.name) for category in user.categories]
+    # достаём все непустые категории для юзера
+    categories_list = [(category.id, category.name) for category in user.categories if category.category_questions]
 
-    return render_template("get_categories.html", categories_list=categories_list)
+    # если есть категории, в которых есть вопросы
+    if categories_list:
+        return render_template("get_categories.html", categories_list=categories_list)
+    return render_template("get_categories.html", categories_list=categories_list, empty=True)
 
 
 @app.route("/questions/<category_id>")
 def questions(category_id):
+    # получаем объект юзера из запроса
+    user = get_user_from_request(request=request)
+
+    # получаем объект категории по её id
     category_obj = Category.query().filter_by(id=category_id).first()
 
-    all_questions = category_obj.category_questions
-    print(all_questions)
+    # если категория не найдена
+    if not category_obj:
+        return abort(404)
 
-    return render_template("get_questions.html")
+    # если категория принадлежит другому юзеру
+    if category_obj.category_user.id != user.id:
+        return render_template(
+            "error_page.html",
+            status=403,
+            desc='Доступ к этому ресурсу запрещён!',
+            url=url_for('index'),
+            url_text='Вернуться на главную'
+        )
+        # raise PermissionsDenied('Permissions to this resource denied!')
+
+    if all_questions := category_obj.category_questions:
+        # если вопросы в категории ещё остались
+        random_question = random.choice(all_questions)
+        Question.delete(pk=random_question.id)
+
+        return render_template(
+            "get_questions.html",
+            left_questions=len(all_questions),
+            category_name=category_obj.name,
+            category_id=category_obj.id,
+            question=random_question,
+        )
+
+    # если все вопросы категории были прочитаны
+    return render_template(
+        "get_questions.html",
+        empty=True,
+        left_questions=len(all_questions),
+        category_name=category_obj.name,
+        category_id=category_obj.id,
+    )
