@@ -59,7 +59,7 @@
         <h1>Главная</h1>
 
         {% if auth %}
-            <a href="#"><button>Категории вопросов</button></a>
+            <a href="{{ url_for('categories') }}"><button>Категории вопросов</button></a>
             <a href="{{ url_for('load_excel') }}"><button>Загрузить Excel-файл с вопросами</button></a>
         {% else %}
             <p>Войдите в аккаунт, чтобы получить доступ к функционалу сервиса</p>

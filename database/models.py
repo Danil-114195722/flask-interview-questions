@@ -58,7 +58,7 @@ class User(Base):
     password = sa.Column(sa.String(255))
 
     tokens = relationship("Token", back_populates="token_user", cascade="all, delete-orphan")
-    questions = relationship("Question", back_populates="question_user", cascade="all, delete-orphan")
+    categories = relationship("Category", back_populates="category_user", cascade="all, delete-orphan")
 
     @property
     def token(self):
@@ -104,10 +104,15 @@ class Token(Base):
 
 class Category(Base):
     __tablename__ = "category"
+    __table_args__ = (
+        sa.UniqueConstraint('user_id', 'name'),
+    )
 
     id = sa.Column(sa.Integer, primary_key=True, index=True, autoincrement=True)
-    name = sa.Column(sa.String(150), unique=True)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey("user.id"))
+    name = sa.Column(sa.String(150))
 
+    category_user = relationship("User", back_populates="categories")
     category_questions = relationship("Question", back_populates="category")
 
     def __str__(self):
@@ -116,26 +121,21 @@ class Category(Base):
 
 class Question(Base):
     __tablename__ = "question"
-    __table_args__ = (
-        sa.Index('idx_question_user_category', 'user_id', 'category_id'),
-    )
 
     id = sa.Column(sa.Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = sa.Column(sa.Integer, sa.ForeignKey("user.id"))
-    category_id = sa.Column(sa.Integer, sa.ForeignKey("category.id"))
+    category_id = sa.Column(sa.Integer, sa.ForeignKey("category.id"), index=True)
     client_name = sa.Column(sa.String(255))
     job_place = sa.Column(sa.String(255))
     job_title = sa.Column(sa.String(150))
     question_text = sa.Column(sa.Text)
 
-    question_user = relationship("User", back_populates="questions")
     category = relationship("Category", back_populates="category_questions")
 
     def __str__(self):
         if len(qu_text := str(self.question_text)) > (max_len := 25):
-            return f"Question {self.id} (user {self.user_id}, category {self.category_id}): {qu_text[:max_len]}..."
+            return f"Question {self.id} (category {self.category_id}): {qu_text[:max_len]}..."
         else:
-            return f"Question {self.id} (user {self.user_id}, category {self.category_id}): {qu_text}"
+            return f"Question {self.id} (category {self.category_id}): {qu_text}"
 
 
 if __name__ == "__main__":

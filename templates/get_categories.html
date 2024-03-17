@@ -2,9 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Categories</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #222;
+            color: #fff;
+        }
+        nav {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+        }
+        h1 {
+            text-align: center;
+            color: #ff6f61; /* Красный цвет заголовка */
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+        .button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-bottom: 10px;
+            display: inline-block; /* Добавлено для правильного выравнивания кнопок */
+        }
+    </style>
 </head>
 <body>
+    <nav>
+        <p><a href="{{ url_for('index') }}">Главная</a></p>
+    </nav>
 
+    <h1>Категории вопросов</h1>
+
+    <div class="container">
+        {% for category in categories_list %}
+            <button class="button" onclick="window.location.href='{{ url_for('questions', category_id=category[0]) }}'">{{ category[1] }}</button>
+        {% endfor %}
+    </div>
 </body>
 </html>

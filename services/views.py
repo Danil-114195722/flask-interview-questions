@@ -6,7 +6,7 @@ from flask import render_template, request, make_response, url_for
 from sqlalchemy.exc import IntegrityError
 
 from data.constants import BASEDIR, IP_OR_DOMAIN, app
-from database.models import User
+from database.models import User, Category
 from .errors import PermissionsDenied, ServerProcessError
 from .services import (make_password, check_password, get_user_from_request,
                        check_token_in_db, check_token_expired, remove_token,
@@ -239,10 +239,29 @@ def load_excel():
         request_file.save(full_file_path)
 
         # добавления всех вопросов из загруженного Excel-файла в БД
-        total_result_dict = upload_questions_to_db(path_to_file=full_file_path, user_obj=user)
-        print(total_result_dict)
+        total_result_dict = upload_questions_to_db(path_to_file=full_file_path, user_id=user.id)
 
         # удаляем загруженный файл после добавления всех вопросов в БД
         remove(full_file_path)
 
         return render_template("load_excel.html", sent=True, total_result_dict=total_result_dict)
+
+
+@app.route("/categories")
+def categories():
+    # получаем объект юзера из запроса
+    user = get_user_from_request(request=request)
+
+    categories_list = [(category.id, category.name) for category in user.categories]
+
+    return render_template("get_categories.html", categories_list=categories_list)
+
+
+@app.route("/questions/<category_id>")
+def questions(category_id):
+    category_obj = Category.query().filter_by(id=category_id).first()
+
+    all_questions = category_obj.category_questions
+    print(all_questions)
+
+    return render_template("get_questions.html")

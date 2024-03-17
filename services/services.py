@@ -101,7 +101,7 @@ def get_user_from_request(request: Request) -> User:
     return user
 
 
-def upload_questions_to_db(path_to_file: str, user_obj: User) -> dict:
+def upload_questions_to_db(path_to_file: str, user_id: int) -> dict:
     xls = pd.ExcelFile(path_to_file)
 
     # добавляем в словарь ключи-листы и значения-датафреймы
@@ -115,9 +115,9 @@ def upload_questions_to_db(path_to_file: str, user_obj: User) -> dict:
 
     # цикл по листам
     for category, df in dataframe_dict.items():
-        category_obj = Category.query().filter_by(name=category).first()
+        category_obj = Category.query().filter_by(name=category, user_id=user_id).first()
         if not category_obj:
-            category_obj = Category.create(name=category)
+            category_obj = Category.create(name=category, user_id=user_id)
 
         # цикл по строкам в листе
         for index, question_row in df.iterrows():
@@ -138,7 +138,6 @@ def upload_questions_to_db(path_to_file: str, user_obj: User) -> dict:
             try:
                 # добавляем вопрос в БД
                 Question.create(
-                    user_id=user_obj.id,
                     category_id=category_obj.id,
                     client_name=client_name,
                     job_place=job_place,
