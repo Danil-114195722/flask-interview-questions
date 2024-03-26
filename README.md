@@ -3,5 +3,5 @@
 To run this application:
 
 ```
-flask --debug run
+flask -h 0.0.0.0 -p 5000 --debug run
 ```
